@@ -31,17 +31,17 @@ func main() {
 		if err != nil {
 			fmt.Println("byte -> json err")
 		}
-		writeToInflux(client)
+		writeToInflux(client, &probe)
 		fmt.Printf("sensor id %d, interval %d, value %d\n", probe.SensorId, probe.Data.Interval, probe.Data.Value)
 	}
 }
 
-func writeToInflux(client influxdb2.Client) {
+func writeToInflux(client influxdb2.Client, probe *messages.Probe) {
 	writeApi := client.WriteApiBlocking("", "probes")
 	// create point using full params constructor
-	p := influxdb2.NewPoint("stat",
-		map[string]string{"unit": "temperature"},
-		map[string]interface{}{"avg": 24.5, "max": 45},
+	p := influxdb2.NewPoint("random",
+		map[string]string{"unit": "delay"},
+		map[string]interface{}{"value": probe.Data.Value},
 		time.Now())
 	// write point immediately
 	writeApi.WritePoint(context.Background(), p)
