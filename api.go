@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/segmentio/kafka-go"
+	"log"
 )
 
 func main() {
@@ -38,7 +39,10 @@ func handlePostMessages(conn *kafka.Conn) func(c *gin.Context) {
 
 func getBytes(probe messages.Probe) []byte {
 	buffer := new(bytes.Buffer)
-	_ = json.NewEncoder(buffer).Encode(probe)
+	err := json.NewEncoder(buffer).Encode(probe)
+	if err != nil {
+		log.Panic("probe -> getBytes -> err")
+	}
 	value := buffer.Bytes()
 	return value
 }
