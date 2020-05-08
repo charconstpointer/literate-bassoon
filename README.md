@@ -1,5 +1,5 @@
 # literate-bassoon
-# Commands
+## CLI
 ### Start server
 
 > go run api.go
