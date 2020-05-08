@@ -27,8 +27,11 @@ func handlePostMessages(conn *kafka.Conn) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var probe = messages.Probe{}
 		if c.Bind(&probe) == nil {
-			probeBytes := getBytes(probe)
-			_, err := conn.WriteMessages(kafka.Message{Value: probeBytes})
+			probeBytes, err := getBytes(probe)
+			if err != nil {
+				log.Panicln("Could not get bytes")
+			}
+			_, err = conn.WriteMessages(kafka.Message{Value: probeBytes})
 			if err != nil {
 				fmt.Println("Send err")
 			}
@@ -37,12 +40,13 @@ func handlePostMessages(conn *kafka.Conn) func(c *gin.Context) {
 	}
 }
 
-func getBytes(probe messages.Probe) []byte {
+func getBytes(probe messages.Probe) ([]byte, error) {
 	buffer := new(bytes.Buffer)
 	err := json.NewEncoder(buffer).Encode(probe)
 	if err != nil {
 		log.Panic("probe -> getBytes -> err")
+		return nil, err
 	}
 	value := buffer.Bytes()
-	return value
+	return value, nil
 }
