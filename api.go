@@ -18,7 +18,12 @@ func main() {
 func listenHttp(conn *kafka.Conn) {
 	r := gin.Default()
 
-	r.POST("/messages", func(c *gin.Context) {
+	r.POST("/messages", handlePostMessages(conn))
+	_ = r.Run()
+}
+
+func handlePostMessages(conn *kafka.Conn) func(c *gin.Context) {
+	return func(c *gin.Context) {
 		var probe = messages.Probe{}
 		if c.Bind(&probe) == nil {
 			probeBytes := getBytes(probe)
@@ -28,8 +33,7 @@ func listenHttp(conn *kafka.Conn) {
 			}
 			c.JSON(200, gin.H{"body": probe.SensorId})
 		}
-	})
-	_ = r.Run()
+	}
 }
 
 func getBytes(probe messages.Probe) []byte {
