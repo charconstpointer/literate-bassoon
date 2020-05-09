@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type Probes struct {
+type Measurement struct {
 	Unit        string  `json:"unit"`
 	Measurement string  `json:"measurement"`
 	Probes      []Probe `json:"probes"`

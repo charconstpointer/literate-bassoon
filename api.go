@@ -18,14 +18,14 @@ func listenHttp() {
 	if err != nil {
 		log.Fatalf("Can't connect to kafka, %v", err)
 	}
-	publish := make(chan domain.Probes)
+	publish := make(chan domain.Measurement)
 	go publishProbes(publish, prod)()
 	r := gin.Default()
 	r.POST("/probes", handleCreateProbe(publish))
 	_ = r.Run()
 }
 
-func publishProbes(publish chan domain.Probes, prod *kafka.Producer) func() {
+func publishProbes(publish chan domain.Measurement, prod *kafka.Producer) func() {
 	return func() {
 		for {
 			select {
@@ -38,9 +38,9 @@ func publishProbes(publish chan domain.Probes, prod *kafka.Producer) func() {
 	}
 }
 
-func handleCreateProbe(publish chan<- domain.Probes) func(context *gin.Context) {
+func handleCreateProbe(publish chan<- domain.Measurement) func(context *gin.Context) {
 	return func(context *gin.Context) {
-		var probes = domain.Probes{}
+		var probes = domain.Measurement{}
 		err := context.Bind(&probes)
 		if err != nil {
 			log.Panicln("Bind err")
