@@ -1,11 +1,12 @@
 package main
 
 import (
-	"alpha/commands"
-	conn2 "alpha/conn"
-	"alpha/domain"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/segmentio/kafka-go"
+	"literate-bassoon/commands"
+	conn2 "literate-bassoon/conn"
+	"literate-bassoon/domain"
 	"log"
 )
 
@@ -16,8 +17,16 @@ func main() {
 
 func listenHttp(conn *kafka.Conn) {
 	r := gin.Default()
+	r.GET("/probes", handleGetProbes("foo bar"))
 	r.POST("/probes", handleCreateProbe())
 	_ = r.Run()
+}
+
+func handleGetProbes(dep interface{}) func(*gin.Context) {
+	fmt.Println(dep)
+	return func(context *gin.Context) {
+		context.JSON(200, dep)
+	}
 }
 
 func handleCreateProbe() func(context *gin.Context) {
