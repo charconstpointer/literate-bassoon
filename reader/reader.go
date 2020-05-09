@@ -12,9 +12,10 @@ import (
 )
 
 func main() {
+	topic := "temperature"
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   []string{"localhost:9092"},
-		Topic:     "temp",
+		Topic:     topic,
 		Partition: 0,
 		MinBytes:  0x3E8, // 10KB
 		MaxBytes:  10e6,  // 10MB
@@ -32,15 +33,15 @@ func main() {
 		if err != nil {
 			fmt.Println("byte -> json err")
 		}
-		writeToInflux(client, &probe)
+		writeToInflux(client, &probe, topic)
 		log.Println("finished")
 	}
 }
 
-func writeToInflux(client influxdb2.Client, probe *domain.Probe) {
+func writeToInflux(client influxdb2.Client, probe *domain.Probe, t string) {
 	writeApi := client.WriteApiBlocking("", "probes")
 	// create point using full params constructor
-	p := influxdb2.NewPoint("test",
+	p := influxdb2.NewPoint(t,
 		map[string]string{"unit": "delay"},
 		map[string]interface{}{"value": probe.Value},
 		time.Now())
