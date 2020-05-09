@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	topic := "temperature"
+	topic := "t1"
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   []string{"localhost:9092"},
 		Topic:     topic,

@@ -4,10 +4,10 @@ import (
 	"alpha/domain"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 	"log"
+	"time"
 )
 
 func main() {
@@ -15,44 +15,54 @@ func main() {
 }
 
 func listenHttp() {
+	prod, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
+	if err != nil {
+		log.Fatalf("Can't connect to kafka, %v", err)
+	}
+	publish := make(chan domain.Probes)
+	go publishProbes(publish, prod)()
 	r := gin.Default()
-	r.GET("/probes", handleGetProbes("foo bar"))
-	r.POST("/probes", handleCreateProbe())
+	r.POST("/probes", handleCreateProbe(publish))
 	_ = r.Run()
 }
 
-func handleGetProbes(dep interface{}) func(*gin.Context) {
-	fmt.Println(dep)
-	return func(context *gin.Context) {
-		context.JSON(200, dep)
+func publishProbes(publish chan domain.Probes, prod *kafka.Producer) func() {
+	return func() {
+		for {
+			select {
+			case m := <-publish:
+				for _, p := range m.Probes {
+					publishProbe(p, prod, m.Measurement)
+					time.Sleep(100 * time.Millisecond)
+				}
+			}
+		}
 	}
 }
 
-func handleCreateProbe() func(context *gin.Context) {
-	prod, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
-	if err != nil {
-		log.Println("Could not connect to kafka")
-	}
+func handleCreateProbe(publish chan<- domain.Probes) func(context *gin.Context) {
 	return func(context *gin.Context) {
 		var probes = domain.Probes{}
 		err := context.Bind(&probes)
 		if err != nil {
 			log.Panicln("Bind err")
 		}
-		for _, p := range probes.Probes {
-			err, b := getBytes(p)
-			if err != nil {
-				log.Fatalf("Can't get bytes of %v", p)
-			}
-			err = prod.Produce(&kafka.Message{
-				TopicPartition: kafka.TopicPartition{Topic: &probes.Measurement, Partition: kafka.PartitionAny},
-				Value:          b,
-			}, nil)
-			if err != nil {
-				log.Println("Can't write to kafka")
-			}
-		}
+		publish <- probes
 		context.JSON(202, probes)
+	}
+}
+
+func publishProbe(p domain.Probe, prod *kafka.Producer, topic string) {
+	err, b := getBytes(p)
+	if err != nil {
+		log.Fatalf("Can't get bytes of %v", p)
+	}
+	err = prod.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+		Value:          b,
+	}, nil)
+	if err != nil {
+		log.Println("Can't write to kafka")
 	}
 }
 
