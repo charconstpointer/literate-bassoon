@@ -1,11 +1,9 @@
 package main
 
 import (
+	"alpha/commands"
 	conn2 "alpha/conn"
-	"alpha/messages"
-	"bytes"
-	"encoding/json"
-	"fmt"
+	"alpha/domain"
 	"github.com/gin-gonic/gin"
 	"github.com/segmentio/kafka-go"
 	"log"
@@ -18,35 +16,26 @@ func main() {
 
 func listenHttp(conn *kafka.Conn) {
 	r := gin.Default()
-
-	r.POST("/messages", handlePostMessages(conn))
+	r.POST("/probes", handleCreateProbe())
 	_ = r.Run()
 }
 
-func handlePostMessages(conn *kafka.Conn) func(c *gin.Context) {
-	return func(c *gin.Context) {
-		var probe = messages.Probe{}
-		if c.Bind(&probe) == nil {
-			probeBytes, err := getBytes(probe)
-			if err != nil {
-				log.Panicln("Could not get bytes")
-			}
-			_, err = conn.WriteMessages(kafka.Message{Value: probeBytes})
-			if err != nil {
-				fmt.Println("Send err")
-			}
-			c.JSON(200, gin.H{"body": probe.SensorId})
+func handleCreateProbe() func(context *gin.Context) {
+	return func(context *gin.Context) {
+		var probes = domain.Probes{}
+		err := context.Bind(&probes)
+		if err != nil {
+			log.Panicln("Bind err")
 		}
+		context.JSON(202, probes)
 	}
 }
 
-func getBytes(probe messages.Probe) ([]byte, error) {
-	buffer := new(bytes.Buffer)
-	err := json.NewEncoder(buffer).Encode(probe)
+func parseUser(context *gin.Context) commands.CreateUser {
+	var user = commands.CreateUser{}
+	err := context.Bind(&user)
 	if err != nil {
-		log.Panic("probe -> getBytes -> err")
-		return nil, err
+		log.Panicln("cant parse user")
 	}
-	value := buffer.Bytes()
-	return value, nil
+	return user
 }
