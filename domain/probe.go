@@ -6,7 +6,7 @@ import (
 
 type Probes struct {
 	Unit        string  `json:"unit"`
-	Measurement string  `json:"string"`
+	Measurement string  `json:"measurement"`
 	Probes      []Probe `json:"probes"`
 }
 type Probe struct {

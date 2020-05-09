@@ -1,19 +1,20 @@
 package main
 
 import (
-	"alpha/messages"
+	"alpha/domain"
 	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/influxdata/influxdb-client-go"
 	"github.com/segmentio/kafka-go"
+	"log"
 	"time"
 )
 
 func main() {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   []string{"localhost:9092"},
-		Topic:     "messages",
+		Topic:     "temp",
 		Partition: 0,
 		MinBytes:  0x3E8, // 10KB
 		MaxBytes:  10e6,  // 10MB
@@ -26,23 +27,26 @@ func main() {
 		if err != nil {
 			break
 		}
-		var probe messages.Probe
+		var probe domain.Probe
 		err = json.Unmarshal(m.Value, &probe)
 		if err != nil {
 			fmt.Println("byte -> json err")
 		}
 		writeToInflux(client, &probe)
-		fmt.Printf("sensor id %d, interval %d, value %d\n", probe.SensorId, probe.Data.Interval, probe.Data.Value)
+		log.Println("finished")
 	}
 }
 
-func writeToInflux(client influxdb2.Client, probe *messages.Probe) {
+func writeToInflux(client influxdb2.Client, probe *domain.Probe) {
 	writeApi := client.WriteApiBlocking("", "probes")
 	// create point using full params constructor
-	p := influxdb2.NewPoint("random",
+	p := influxdb2.NewPoint("test",
 		map[string]string{"unit": "delay"},
-		map[string]interface{}{"value": probe.Data.Value},
+		map[string]interface{}{"value": probe.Value},
 		time.Now())
 	// write point immediately
-	writeApi.WritePoint(context.Background(), p)
+	err := writeApi.WritePoint(context.Background(), p)
+	if err != nil {
+		log.Println("Could not write to influx")
+	}
 }
