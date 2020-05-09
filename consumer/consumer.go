@@ -17,12 +17,10 @@ func main() {
 		Brokers:   []string{"localhost:9092"},
 		Topic:     topic,
 		Partition: 0,
-		MinBytes:  0x3E8, // 10KB
-		MaxBytes:  10e6,  // 10MB
+		MinBytes:  0x3E8,
+		MaxBytes:  10e6,
 	})
 	client := influxdb2.NewClient("http://localhost:8086", "golang:client")
-	// user blocking write client for writes to desired bucket
-
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
@@ -40,12 +38,10 @@ func main() {
 
 func writeToInflux(client influxdb2.Client, probe *domain.Probe, t string) {
 	writeApi := client.WriteApiBlocking("", "probes")
-	// create point using full params constructor
 	p := influxdb2.NewPoint(t,
 		map[string]string{"unit": "delay"},
 		map[string]interface{}{"value": probe.Value},
 		time.Now())
-	// write point immediately
 	err := writeApi.WritePoint(context.Background(), p)
 	if err != nil {
 		log.Println("Could not write to influx")

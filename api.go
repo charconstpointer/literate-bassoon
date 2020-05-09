@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 	"log"
-	"time"
 )
 
 func main() {
@@ -33,7 +32,6 @@ func publishProbes(publish chan domain.Probes, prod *kafka.Producer) func() {
 			case m := <-publish:
 				for _, p := range m.Probes {
 					publishProbe(p, prod, m.Measurement)
-					time.Sleep(100 * time.Millisecond)
 				}
 			}
 		}
