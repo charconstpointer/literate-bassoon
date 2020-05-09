@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/segmentio/kafka-go"
-	"literate-bassoon/commands"
 	conn2 "literate-bassoon/conn"
 	"literate-bassoon/domain"
 	"log"
@@ -38,13 +37,4 @@ func handleCreateProbe() func(context *gin.Context) {
 		}
 		context.JSON(202, probes)
 	}
-}
-
-func parseUser(context *gin.Context) commands.CreateUser {
-	var user = commands.CreateUser{}
-	err := context.Bind(&user)
-	if err != nil {
-		log.Panicln("cant parse user")
-	}
-	return user
 }
