@@ -1,7 +1,7 @@
 package main
 
 import (
-	"./domain"
+	"alpha/domain"
 	"bytes"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
