@@ -36,7 +36,7 @@ func main() {
 	}
 }
 
-func writeToInflux(client influxdb2.Client, probe *domain.Probe, t string) {
+func writeToInflux(client influxdb2.InfluxDBClient, probe *domain.Probe, t string) {
 	writeApi := client.WriteApiBlocking("", "probes")
 	p := influxdb2.NewPoint(t,
 		map[string]string{"unit": "delay"},
