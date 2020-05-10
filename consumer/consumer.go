@@ -17,6 +17,7 @@ func main() {
 	var kafkaHost = flag.String("kafka", "localhost:9092", "kafka host")
 	var influxHost = flag.String("influx", "http://localhost:8086", "influx host")
 	var token = flag.String("token", "golang:client", "influx auth")
+	flag.Parse()
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   []string{*kafkaHost},
 		Topic:     *topic,
