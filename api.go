@@ -26,6 +26,9 @@ func setupRoutes() *gin.Engine {
 	go publishProbes(publish, prod)()
 	r := gin.Default()
 	r.POST("/probes", handleCreateProbe(publish))
+	r.GET("/hello", func(context *gin.Context) {
+		context.JSON(200, "alive")
+	})
 	return r
 }
 
