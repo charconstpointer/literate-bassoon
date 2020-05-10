@@ -4,6 +4,7 @@ import (
 	"alpha/domain"
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/influxdata/influxdb-client-go"
 	"github.com/segmentio/kafka-go"
@@ -12,15 +13,18 @@ import (
 )
 
 func main() {
-	topic := "t1"
+	var topic = flag.String("topic", "default", "kafka topic")
+	var kafkaHost = flag.String("kafka", "localhost:9092", "kafka host")
+	var influxHost = flag.String("influx", "http://localhost:8086", "influx host")
+	var token = flag.String("token", "golang:client", "influx auth")
 	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{"localhost:9092"},
-		Topic:     topic,
+		Brokers:   []string{*kafkaHost},
+		Topic:     *topic,
 		Partition: 0,
 		MinBytes:  0x3E8,
 		MaxBytes:  10e6,
 	})
-	client := influxdb2.NewClient("http://localhost:8086", "golang:client")
+	client := influxdb2.NewClient(*influxHost, *token)
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
@@ -31,7 +35,7 @@ func main() {
 		if err != nil {
 			fmt.Println("byte -> json err")
 		}
-		writeToInflux(client, &probe, topic)
+		writeToInflux(client, &probe, *topic)
 		log.Println("finished")
 	}
 }
