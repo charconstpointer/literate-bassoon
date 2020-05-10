@@ -7,4 +7,4 @@
 ### Start server
 > go run api.go
 ### Start consumer
-> >go run consumer.go -topic=some.kafka.topic -influx=localhost:port -kafka=localhost:port -token=influx-auth-token
+> go run consumer.go -topic=some.kafka.topic -influx=localhost:port -kafka=localhost:port -token=influx-auth-token
