@@ -10,10 +10,14 @@ import (
 )
 
 func main() {
-	listenHttp()
+	r := setupRoutes()
+	err := r.Run()
+	if err != nil {
+		log.Fatalf("Can't start the server %v", err)
+	}
 }
 
-func listenHttp() {
+func setupRoutes() *gin.Engine {
 	prod, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
 	if err != nil {
 		log.Fatalf("Can't connect to kafka, %v", err)
@@ -22,7 +26,7 @@ func listenHttp() {
 	go publishProbes(publish, prod)()
 	r := gin.Default()
 	r.POST("/probes", handleCreateProbe(publish))
-	_ = r.Run()
+	return r
 }
 
 func publishProbes(publish chan domain.Measurement, prod *kafka.Producer) func() {
@@ -31,7 +35,10 @@ func publishProbes(publish chan domain.Measurement, prod *kafka.Producer) func()
 			select {
 			case m := <-publish:
 				for _, p := range m.Probes {
-					publishProbe(p, prod, m.Measurement)
+					err := publishProbe(p, prod, m.Measurement)
+					if err != nil {
+						log.Fatalf("%v could not be sent to topic %s \n", p, m.Measurement)
+					}
 				}
 			}
 		}
@@ -50,7 +57,7 @@ func handleCreateProbe(publish chan<- domain.Measurement) func(context *gin.Cont
 	}
 }
 
-func publishProbe(p domain.Probe, prod *kafka.Producer, topic string) {
+func publishProbe(p domain.Probe, prod *kafka.Producer, topic string) error {
 	err, b := getBytes(p)
 	if err != nil {
 		log.Fatalf("Can't get bytes of %v", p)
@@ -59,9 +66,7 @@ func publishProbe(p domain.Probe, prod *kafka.Producer, topic string) {
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          b,
 	}, nil)
-	if err != nil {
-		log.Println("Can't write to kafka")
-	}
+	return err
 }
 
 func getBytes(p domain.Probe) (error, []byte) {
