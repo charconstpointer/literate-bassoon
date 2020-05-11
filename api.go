@@ -38,13 +38,17 @@ func publishProbes(publish chan domain.Measurement, prod *kafka.Producer) func()
 		for {
 			select {
 			case m := <-publish:
-				for _, p := range m.Probes {
-					err := publishProbe(p, prod, m.Measurement)
-					if err != nil {
-						log.Fatalf("%v could not be sent to topic %s \n", p, m.Measurement)
-					}
-				}
+				sendToKafka(m, prod)
 			}
+		}
+	}
+}
+
+func sendToKafka(m domain.Measurement, prod *kafka.Producer) {
+	for _, p := range m.Probes {
+		err := publishProbe(p, prod, m.Measurement)
+		if err != nil {
+			log.Fatalf("%v could not be sent to topic %s \n", p, m.Measurement)
 		}
 	}
 }
