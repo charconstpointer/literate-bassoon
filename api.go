@@ -4,6 +4,7 @@ import (
 	"alpha/domain"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 	"log"
@@ -18,7 +19,7 @@ func main() {
 }
 
 func setupRoutes() *gin.Engine {
-	prod, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
+	prod, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "kafka:9092"})
 	if err != nil {
 		log.Fatalf("Can't connect to kafka, %v", err)
 	}
@@ -61,6 +62,7 @@ func handleCreateProbe(publish chan<- domain.Measurement) func(context *gin.Cont
 }
 
 func publishProbe(p domain.Probe, prod *kafka.Producer, topic string) error {
+	fmt.Println(topic)
 	err, b := getBytes(p)
 	if err != nil {
 		log.Fatalf("Can't get bytes of %v", p)

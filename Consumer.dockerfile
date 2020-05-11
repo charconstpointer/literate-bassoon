@@ -6,5 +6,5 @@ WORKDIR /app
 ENV GO111MODULE=on
 
 RUN apt-get update && apt-get install build-essential -y
-RUN GOOS=linux go build -o consumer/consumer
-CMD ["./consumer"]
+RUN cd consumer && GOOS=linux go build -o cons
+CMD ./consumer/cons -topic=t9 -influx=http://influxdb:8086 -kafka=kafka:9092 -token=influx-golang:client

@@ -9,15 +9,18 @@ import (
 	"github.com/influxdata/influxdb-client-go"
 	"github.com/segmentio/kafka-go"
 	"log"
+	"os"
 	"time"
 )
 
 func main() {
-	var topic = flag.String("topic", "default", "kafka topic")
+	log.SetOutput(os.Stdout)
+	var topic = flag.String("topic", "t4", "kafka topic")
 	var kafkaHost = flag.String("kafka", "localhost:9092", "kafka host")
 	var influxHost = flag.String("influx", "http://localhost:8086", "influx host")
 	var token = flag.String("token", "golang:client", "influx auth")
 	flag.Parse()
+	fmt.Println(*topic)
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   []string{*kafkaHost},
 		Topic:     *topic,
@@ -29,26 +32,29 @@ func main() {
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
-			break
+			fmt.Println(err)
+			time.Sleep(5000 * time.Millisecond)
 		}
 		var probe domain.Probe
 		err = json.Unmarshal(m.Value, &probe)
 		if err != nil {
-			fmt.Println("byte -> json err")
+			fmt.Println("cant parse probe")
+		} else {
+			err = writeToInflux(client, &probe, *topic)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
-		writeToInflux(client, &probe, *topic)
-		log.Println("finished")
+
 	}
 }
 
-func writeToInflux(client influxdb2.InfluxDBClient, probe *domain.Probe, t string) {
+func writeToInflux(client influxdb2.InfluxDBClient, probe *domain.Probe, t string) error {
 	writeApi := client.WriteApiBlocking("", "probes")
 	p := influxdb2.NewPoint(t,
 		map[string]string{"unit": "delay"},
 		map[string]interface{}{"value": probe.Value},
 		time.Now())
 	err := writeApi.WritePoint(context.Background(), p)
-	if err != nil {
-		log.Println("Could not write to influx")
-	}
+	return err
 }
