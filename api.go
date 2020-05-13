@@ -4,33 +4,37 @@ import (
 	"alpha/domain"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
-	"log"
 )
 
 func main() {
-	r := setupRoutes()
+	probes := make(chan domain.Measurement)
+	r := setupRoutes(probes)
 	err := r.Run()
 	if err != nil {
-		log.Fatalf("Can't start the server %v", err)
+		log.Error("Can't start the server %v", err)
 	}
 }
 
-func setupRoutes() *gin.Engine {
+func setupRoutes(probes chan domain.Measurement) *gin.Engine {
 	prod, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
 	if err != nil {
-		log.Fatalf("Can't connect to kafka, %v", err)
+		log.Error("Can't connect to kafka")
 	}
-	publish := make(chan domain.Measurement)
-	go publishProbes(publish, prod)()
+
+	go publishProbes(probes, prod)()
 	r := gin.Default()
-	r.POST("/probes", handleCreateProbe(publish))
-	r.GET("/hello", func(context *gin.Context) {
-		context.JSON(200, "alive")
-	})
+	r.POST("/probes", handleCreateProbes(probes))
+	r.GET("/hello", handleHello())
 	return r
+}
+
+func handleHello() func(context *gin.Context) {
+	return func(context *gin.Context) {
+		context.JSON(200, "alive")
+	}
 }
 
 func publishProbes(publish chan domain.Measurement, prod *kafka.Producer) func() {
@@ -48,17 +52,17 @@ func sendToKafka(m domain.Measurement, prod *kafka.Producer) {
 	for _, p := range m.Probes {
 		err := publishProbe(p, prod, m.Measurement)
 		if err != nil {
-			log.Fatalf("%v could not be sent to topic %s \n", p, m.Measurement)
+			log.Errorf("%v could not be sent to topic", p, m.Measurement)
 		}
 	}
 }
 
-func handleCreateProbe(publish chan<- domain.Measurement) func(context *gin.Context) {
+func handleCreateProbes(publish chan<- domain.Measurement) func(context *gin.Context) {
 	return func(context *gin.Context) {
 		var probes = domain.Measurement{}
 		err := context.Bind(&probes)
 		if err != nil {
-			log.Panicln("Bind err")
+			log.Error("Bind err")
 		}
 		publish <- probes
 		context.JSON(202, probes)
@@ -66,10 +70,10 @@ func handleCreateProbe(publish chan<- domain.Measurement) func(context *gin.Cont
 }
 
 func publishProbe(p domain.Probe, prod *kafka.Producer, topic string) error {
-	fmt.Println(topic)
 	err, b := getBytes(p)
+	log.Infof("Publishing probe on topic %s", topic)
 	if err != nil {
-		log.Fatalf("Can't get bytes of %v", p)
+		log.Errorf("Can't get bytes of %v", p)
 	}
 	err = prod.Produce(&kafka.Message{
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
