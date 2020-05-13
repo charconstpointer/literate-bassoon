@@ -10,6 +10,6 @@ type Measurement struct {
 	Probes      []Probe `json:"probes"`
 }
 type Probe struct {
-	Date  time.Time   `json:"date"`
-	Value interface{} `json:"value"`
+	Date   time.Time              `json:"date"`
+	Values map[string]interface{} `json:"values"`
 }

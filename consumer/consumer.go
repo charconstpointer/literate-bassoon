@@ -65,7 +65,7 @@ func writeToInflux(client influxdb2.InfluxDBClient, probe *domain.Probe, t strin
 	writeApi := client.WriteApiBlocking("", "probes")
 	p := influxdb2.NewPoint(t,
 		map[string]string{"unit": "delay"},
-		map[string]interface{}{"value": probe.Value},
+		probe.Values,
 		time.Now())
 	err := writeApi.WritePoint(context.Background(), p)
 	return err
