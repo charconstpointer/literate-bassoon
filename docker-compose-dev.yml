@@ -1,0 +1,42 @@
+version: '3'
+services:
+  zookeeper:
+    image: wurstmeister/zookeeper
+  kafka:
+    image: wurstmeister/kafka
+    hostname: kafka
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    ports:
+      - "9092:9092"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  influxdb:
+    image: influxdb:latest
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    ports:
+      - "8086:8086"
+      - "8083:8083"
+      - "9999:9999"
+    restart: always
+  chronograf:
+    image: chronograf:1.5
+    volumes:
+      - chronograf_data:/var/lib/chronograf
+    ports:
+      - 127.0.0.1:8087:8888
+    restart: always
+  grafana:
+    image: grafana/grafana
+    ports:
+      - 127.0.0.1:3000:3000
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: always
+volumes:
+  influxdb_data:
+  chronograf_data:
+  grafana_data:

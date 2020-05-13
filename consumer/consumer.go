@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	var topic = flag.String("topic", "t4", "kafka topic")
+	var topic = flag.String("topic", "foo", "kafka topic")
 	var kafkaHost = flag.String("kafka", "localhost:9092", "kafka host")
 	var influxHost = flag.String("influx", "http://localhost:8086", "influx host")
 	var token = flag.String("token", "golang:client", "influx auth")

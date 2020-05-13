@@ -19,7 +19,7 @@ func main() {
 }
 
 func setupRoutes() *gin.Engine {
-	prod, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "kafka:9092"})
+	prod, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
 	if err != nil {
 		log.Fatalf("Can't connect to kafka, %v", err)
 	}
