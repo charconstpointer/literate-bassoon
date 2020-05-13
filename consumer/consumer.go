@@ -20,6 +20,10 @@ func main() {
 	mes := make(chan *domain.Probe)
 	client := influxdb2.NewClient(*influxHost, *token)
 	go persist(mes, client, topic)()
+	read(kafkaHost, topic, mes)
+}
+
+func read(kafkaHost *string, topic *string, mes chan *domain.Probe) {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   []string{*kafkaHost},
 		Topic:     *topic,
