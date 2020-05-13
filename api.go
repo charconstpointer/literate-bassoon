@@ -4,6 +4,7 @@ import (
 	"alpha/domain"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 	"log"
@@ -25,23 +26,11 @@ func setupRoutes() *gin.Engine {
 	publish := make(chan domain.Measurement)
 	go publishProbes(publish, prod)()
 	r := gin.Default()
-	r.POST("/test", handleTest())
 	r.POST("/probes", handleCreateProbe(publish))
 	r.GET("/hello", func(context *gin.Context) {
 		context.JSON(200, "alive")
 	})
 	return r
-}
-
-func handleTest() func(context *gin.Context) {
-	return func(context *gin.Context) {
-		var probes = domain.Measurement{}
-		err := context.Bind(&probes)
-		if err != nil {
-			log.Panicln("Bind err")
-		}
-		context.JSON(200, probes)
-	}
 }
 
 func publishProbes(publish chan domain.Measurement, prod *kafka.Producer) func() {
@@ -77,6 +66,7 @@ func handleCreateProbe(publish chan<- domain.Measurement) func(context *gin.Cont
 }
 
 func publishProbe(p domain.Probe, prod *kafka.Producer, topic string) error {
+	fmt.Println(topic)
 	err, b := getBytes(p)
 	if err != nil {
 		log.Fatalf("Can't get bytes of %v", p)

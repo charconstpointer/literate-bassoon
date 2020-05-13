@@ -17,13 +17,6 @@ func main() {
 	var influxHost = flag.String("influx", "http://localhost:8086", "influx host")
 	var token = flag.String("token", "golang:client", "influx auth")
 	flag.Parse()
-	mes := make(chan *domain.Probe)
-	client := influxdb2.NewClient(*influxHost, *token)
-	go persist(mes, client, topic)()
-	read(kafkaHost, topic, mes)
-}
-
-func read(kafkaHost *string, topic *string, mes chan *domain.Probe) {
 	r := kafka.NewReader(kafka.ReaderConfig{
 		Brokers:   []string{*kafkaHost},
 		Topic:     *topic,
@@ -31,7 +24,7 @@ func read(kafkaHost *string, topic *string, mes chan *domain.Probe) {
 		MinBytes:  0x3E8,
 		MaxBytes:  10e6,
 	})
-
+	client := influxdb2.NewClient(*influxHost, *token)
 	for {
 		m, err := r.ReadMessage(context.Background())
 		if err != nil {
@@ -43,24 +36,14 @@ func read(kafkaHost *string, topic *string, mes chan *domain.Probe) {
 		if err != nil {
 			fmt.Println("cant parse probe")
 		} else {
-			mes <- &probe
-		}
-
-	}
-}
-
-func persist(mes chan *domain.Probe, client influxdb2.InfluxDBClient, topic *string) func() {
-	return func() {
-		select {
-		case m := <-mes:
-			err := writeToInflux(client, m, *topic)
+			err = writeToInflux(client, &probe, *topic)
 			if err != nil {
-				fmt.Println("Could not persist the measurement")
+				fmt.Println(err)
 			}
 		}
+
 	}
 }
-
 func writeToInflux(client influxdb2.InfluxDBClient, probe *domain.Probe, t string) error {
 	writeApi := client.WriteApiBlocking("", "probes")
 	p := influxdb2.NewPoint(t,

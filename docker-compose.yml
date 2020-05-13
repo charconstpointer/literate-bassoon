@@ -37,11 +37,14 @@ services:
       - grafana_data:/var/lib/grafana
     restart: always
   prod:
-    image: controllerbase/alpha-api
+    image: controllerbase/prod-alpha:red
     ports:
       - 8080:8080
   cons:
-    image: controllerbase/alpha-cons
+    image: controllerbase/cons-alpha:red
+#    build:
+#      dockerfile: Consumer.dockerfile
+#      context: .
 volumes:
   influxdb_data:
   chronograf_data:
