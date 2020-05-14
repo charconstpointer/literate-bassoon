@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	probes := make(chan domain.Measurement)
+	probes := make(chan domain.Probe)
 	r := setupRoutes(probes)
 	err := r.Run()
 	if err != nil {
@@ -18,7 +18,7 @@ func main() {
 	}
 }
 
-func setupRoutes(probes chan domain.Measurement) *gin.Engine {
+func setupRoutes(probes chan domain.Probe) *gin.Engine {
 	prod, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": "localhost:9092"})
 	if err != nil {
 		log.Error("Can't connect to kafka")
@@ -37,29 +37,20 @@ func handleHello() func(context *gin.Context) {
 	}
 }
 
-func publishProbes(publish chan domain.Measurement, prod *kafka.Producer) func() {
+func publishProbes(publish chan domain.Probe, prod *kafka.Producer) func() {
 	return func() {
 		for {
 			select {
-			case m := <-publish:
-				sendToKafka(m, prod)
+			case p := <-publish:
+				sendToKafka(p, prod)
 			}
 		}
 	}
 }
 
-func sendToKafka(m domain.Measurement, prod *kafka.Producer) {
-	for _, p := range m.Probes {
-		err := publishMeasurement(prod, m)
-		if err != nil {
-			log.Errorf("%v could not be sent to topic", p, m.Measurement)
-		}
-	}
-}
-
-func publishMeasurement(prod *kafka.Producer, m domain.Measurement) error {
-	err, b := getBytes(m)
-	topic := "measurements"
+func sendToKafka(p domain.Probe, prod *kafka.Producer) {
+	err, b := getBytes(p)
+	topic := p.Sensor
 	log.Infof("Publishing probe on topic %s", topic)
 	if err != nil {
 		log.Errorf("Can't get bytes of %v", topic)
@@ -68,17 +59,21 @@ func publishMeasurement(prod *kafka.Producer, m domain.Measurement) error {
 		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
 		Value:          b,
 	}, nil)
-	return err
+	if err != nil {
+		log.Errorf("%v could not be sent to topic", p, p.Sensor)
+	}
 }
 
-func handleCreateProbes(publish chan<- domain.Measurement) func(context *gin.Context) {
+func handleCreateProbes(publish chan<- domain.Probe) func(context *gin.Context) {
 	return func(context *gin.Context) {
 		var probes = domain.Measurement{}
 		err := context.Bind(&probes)
 		if err != nil {
 			log.Error("Bind err")
 		}
-		publish <- probes
+		for _, p := range probes.Probes {
+			publish <- p
+		}
 		context.JSON(202, probes)
 	}
 }
