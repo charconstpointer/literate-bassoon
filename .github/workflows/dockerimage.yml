@@ -15,8 +15,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Server.dockerfile --tag controllerbase/alpha-api:$(date +%s)
+      run: docker build . --file Server.dockerfile --tag controllerbase/alpha-api
 
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Consumer.dockerfile --tag controllerbase/alpha-con:$(date +%s)
+      run: docker build . --file Consumer.dockerfile --tag controllerbase/alpha-con
+    - name: docker login
+      run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
+    - name: docker push controllerbase/alpha-api
+      run: docker push controllerbase/alpha-api
+    - name: docker push controllerbase/alpha-con
+      run: docker push controllerbase/alpha-con
