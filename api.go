@@ -59,7 +59,7 @@ func sendToKafka(m domain.Measurement, prod *kafka.Producer) {
 
 func publishMeasurement(prod *kafka.Producer, m domain.Measurement) error {
 	err, b := getBytes(m)
-	topic := "measurements"
+	topic := m.Measurement
 	log.Infof("Publishing probe on topic %s", topic)
 	if err != nil {
 		log.Errorf("Can't get bytes of %v", topic)
