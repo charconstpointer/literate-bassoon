@@ -34,26 +34,46 @@ func main() {
 			log.Error(err)
 			time.Sleep(5000 * time.Millisecond)
 		}
-		var probe domain.Probe
-		err = json.Unmarshal(m.Value, &probe)
+		var measurement domain.Measurement
+		err = json.Unmarshal(m.Value, &measurement)
 		if err != nil {
 			log.Error("cant parse probe")
 		} else {
-			err = writeToInflux(client, &probe, *topic)
+			err = writeToInflux(client, &measurement, *topic)
 			if err != nil {
 				fmt.Println(err)
 			}
 		}
 
 	}
+	//for {
+	//	m, err := r.ReadMessage(context.Background())
+	//	if err != nil {
+	//		log.Error(err)
+	//		time.Sleep(5000 * time.Millisecond)
+	//	}
+	//	var probe domain.Probe
+	//	err = json.Unmarshal(m.Value, &probe)
+	//	if err != nil {
+	//		log.Error("cant parse probe")
+	//	} else {
+	//		err = writeToInflux(client, &probe, *topic)
+	//		if err != nil {
+	//			fmt.Println(err)
+	//		}
+	//	}
+	//
+	//}
 }
-func writeToInflux(client influxdb2.InfluxDBClient, probe *domain.Probe, t string) error {
-	writeApi := client.WriteApiBlocking("", "probes")
-	p := influxdb2.NewPoint(t,
-		map[string]string{"unit": "delay"},
-		probe.Values,
-		time.Now())
+func writeToInflux(client influxdb2.InfluxDBClient, m *domain.Measurement, t string) error {
+	writeApi := client.WriteApi("", "probes")
+	for _, p := range m.Probes {
+		point := influxdb2.NewPoint(t,
+			map[string]string{"unit": "delay"},
+			p.Values,
+			time.Now())
+		writeApi.WritePoint(point)
+	}
 	log.Info("Writing to influx")
-	err := writeApi.WritePoint(context.Background(), p)
-	return err
+	return nil
 }

@@ -50,11 +50,25 @@ func publishProbes(publish chan domain.Measurement, prod *kafka.Producer) func()
 
 func sendToKafka(m domain.Measurement, prod *kafka.Producer) {
 	for _, p := range m.Probes {
-		err := publishProbe(p, prod, m.Measurement)
+		err := publishMeasurement(prod, m)
 		if err != nil {
 			log.Errorf("%v could not be sent to topic", p, m.Measurement)
 		}
 	}
+}
+
+func publishMeasurement(prod *kafka.Producer, m domain.Measurement) error {
+	err, b := getBytes(m)
+	topic := m.Measurement
+	log.Infof("Publishing probe on topic %s", topic)
+	if err != nil {
+		log.Errorf("Can't get bytes of %v", topic)
+	}
+	err = prod.Produce(&kafka.Message{
+		TopicPartition: kafka.TopicPartition{Topic: &topic, Partition: kafka.PartitionAny},
+		Value:          b,
+	}, nil)
+	return err
 }
 
 func handleCreateProbes(publish chan<- domain.Measurement) func(context *gin.Context) {
@@ -82,7 +96,7 @@ func publishProbe(p domain.Probe, prod *kafka.Producer, topic string) error {
 	return err
 }
 
-func getBytes(p domain.Probe) (error, []byte) {
+func getBytes(p interface{}) (error, []byte) {
 	reqBodyBytes := new(bytes.Buffer)
 	err := json.NewEncoder(reqBodyBytes).Encode(p)
 	b := reqBodyBytes.Bytes()
