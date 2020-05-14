@@ -16,12 +16,10 @@ jobs:
     - uses: actions/checkout@v2
     - name: Build the Docker image
       run: docker build . --file Server.dockerfile --tag controllerbase/alpha-api
-
+    - name: Login to GitHub Package Registry
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login docker.pkg.github.com -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Consumer.dockerfile --tag controllerbase/alpha-con
-    - name: docker login
-      run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
     - name: docker push controllerbase/alpha-api
       run: docker push controllerbase/alpha-api
     - name: docker push controllerbase/alpha-con
