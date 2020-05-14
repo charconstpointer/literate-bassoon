@@ -22,7 +22,7 @@ jobs:
     # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
     - uses: docker/build-push-action@v1
       with:
-        dockerfile: charconstpointer/literate-bassoon/Server.dockerfile
+        dockerfile: ./Server.dockerfile
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: controllerbase/githubtest
@@ -30,7 +30,7 @@ jobs:
         tag_with_sha: true
     - uses: docker/build-push-action@v1
       with:
-        dockerfile: charconstpointer/literate-bassoon/Consumer.dockerfile
+        dockerfile: ./Consumer.dockerfile
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: controllerbase/githubtest
