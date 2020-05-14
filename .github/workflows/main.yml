@@ -17,22 +17,25 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: docker/build-push-action@v1
+    - uses: actions/checkout@v1.0
+      name: Check out code
+
+    - uses: mr-smithers-excellent/docker-build-push@v3
+      name: Build & push Docker image
       with:
-        dockerfile: ./Server.dockerfile
+        image: controllerbase/ghtestp
+        tag: latest
+        registry: registry-url.io
+        dockerfile: Server.dockerfile
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: controllerbase/githubtest
-        tag_with_ref: true
-        tag_with_sha: true
-    - uses: docker/build-push-action@v1
+    - uses: mr-smithers-excellent/docker-build-push@v3
+      name: Build & push Docker image
       with:
-        dockerfile: ./Consumer.dockerfile
+        image: controllerbase/ghtestc
+        tag: latest
+        registry: registry-url.io
+        dockerfile: Consumer.dockerfile
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: controllerbase/githubtest
-        tag_with_ref: true
-        tag_with_sha: true
