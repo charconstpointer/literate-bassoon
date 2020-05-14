@@ -25,7 +25,7 @@ func main() {
 }
 
 func parseFlags() (*string, *string, *string, *string) {
-	var topic = flag.String("topic", "measurements", "kafka topic")
+	var topic = flag.String("topic", "D385DD88", "kafka topic")
 	var kafkaHost = flag.String("kafka", "localhost:9092", "kafka host")
 	var influxHost = flag.String("influx", "http://localhost:8086", "influx host")
 	var token = flag.String("token", "golang:client", "influx auth")
@@ -41,12 +41,12 @@ func readAndPersist(r *kafka.Reader, client influxdb2.InfluxDBClient) {
 			log.Error(err)
 			time.Sleep(5000 * time.Millisecond)
 		}
-		var measurement domain.Measurement
-		err = json.Unmarshal(m.Value, &measurement)
+		var probe domain.Probe
+		err = json.Unmarshal(m.Value, &probe)
 		if err != nil {
 			log.Error("Can't parse measurement")
 		} else {
-			err = writeToInflux(client, &measurement)
+			err = writeToInflux(client, &probe)
 			if err != nil {
 				log.Error(err)
 			}
@@ -54,16 +54,15 @@ func readAndPersist(r *kafka.Reader, client influxdb2.InfluxDBClient) {
 
 	}
 }
-func writeToInflux(client influxdb2.InfluxDBClient, m *domain.Measurement) error {
-	topic := m.Measurement
+func writeToInflux(client influxdb2.InfluxDBClient, m *domain.Probe) error {
+	topic := m.Sensor
 	writeApi := client.WriteApi("", "probes")
-	for _, p := range m.Probes {
-		point := influxdb2.NewPoint(topic,
-			map[string]string{"unit": "delay"},
-			p.Values,
-			time.Now())
-		writeApi.WritePoint(point)
-	}
+	point := influxdb2.NewPoint(topic,
+		map[string]string{"unit": "delay"},
+		map[string]interface{}{m.Unit: m.Value},
+		time.Now())
+	writeApi.WritePoint(point)
+
 	log.Info("Writing to influx")
 	return nil
 }
