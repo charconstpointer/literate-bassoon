@@ -10,6 +10,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/segmentio/kafka-go v0.3.6
+	github.com/sirupsen/logrus v1.6.0
 	golang.org/x/sys v0.0.0-20200509044756-6aff5f38e54f // indirect
 	gopkg.in/confluentinc/confluent-kafka-go.v1 v1.4.2
 )

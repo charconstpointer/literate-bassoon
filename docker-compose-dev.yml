@@ -6,8 +6,8 @@ services:
     image: wurstmeister/kafka
     hostname: kafka
     environment:
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ADVERTISED_HOST_NAME: localhost
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
     ports:
       - "9092:9092"
@@ -36,15 +36,6 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     restart: always
-  prod:
-    image: controllerbase/prod-alpha:red
-    ports:
-      - 8080:8080
-  cons:
-    image: controllerbase/cons-alpha:red
-#    build:
-#      dockerfile: Consumer.dockerfile
-#      context: .
 volumes:
   influxdb_data:
   chronograf_data:
