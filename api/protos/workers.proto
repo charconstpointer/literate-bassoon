@@ -1,0 +1,13 @@
+syntax = "proto3";
+service Workers{
+  rpc ListenTopic(TopicName) returns (Empty) {
+
+  }
+
+}
+message TopicName{
+  string topic = 1;
+}
+message Empty {
+
+}
