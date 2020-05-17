@@ -15,7 +15,7 @@ type server struct {
 	topics *map[string]bool
 }
 
-func (s *server) ListenTopic(c context.Context, t *workers.TopicName) (*workers.Empty, error) {
+func (s *server) ListenTopic(_ context.Context, t *workers.TopicName) (*workers.Empty, error) {
 	topic := t.Topic
 	(*s.topics)[topic] = true
 	response := &workers.Empty{}
