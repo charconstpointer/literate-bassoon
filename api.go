@@ -1,11 +1,14 @@
 package main
 
 import (
+	workers "alpha/api/gen"
 	"alpha/domain"
 	"bytes"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
 	"gopkg.in/confluentinc/confluent-kafka-go.v1/kafka"
 )
 
@@ -42,6 +45,7 @@ func publishProbes(publish chan domain.Probe, prod *kafka.Producer) func() {
 		for {
 			select {
 			case p := <-publish:
+				invokeClient(p.Sensor)
 				sendToKafka(p, prod)
 			}
 		}
@@ -76,6 +80,18 @@ func handleCreateProbes(publish chan<- domain.Probe) func(context *gin.Context) 
 		}
 		context.JSON(202, probes)
 	}
+}
+
+func invokeClient(topic string) {
+	opts := grpc.WithInsecure()
+	cc, err := grpc.Dial("localhost:50051", opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cc.Close()
+	client := workers.NewWorkersClient(cc)
+	request := &workers.TopicName{Topic: topic}
+	_, _ = client.ListenTopic(context.Background(), request)
 }
 
 func getBytes(p interface{}) (error, []byte) {

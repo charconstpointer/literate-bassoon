@@ -1,27 +1,54 @@
 package main
 
 import (
+	workers "alpha/api/gen"
 	"alpha/domain"
 	"context"
-	"encoding/json"
 	"flag"
-	"github.com/influxdata/influxdb-client-go"
-	"github.com/segmentio/kafka-go"
+	"fmt"
 	log "github.com/sirupsen/logrus"
-	"time"
+	"google.golang.org/grpc"
+	"net"
 )
 
+type server struct {
+	topics *map[string]bool
+}
+
+func (s *server) ListenTopic(c context.Context, t *workers.TopicName) (*workers.Empty, error) {
+	topic := t.Topic
+	(*s.topics)[topic] = true
+	response := &workers.Empty{}
+	return response, nil
+}
+
 func main() {
-	topic, kafkaHost, influxHost, token := parseFlags()
-	r := kafka.NewReader(kafka.ReaderConfig{
-		Brokers:   []string{*kafkaHost},
-		Topic:     *topic,
-		Partition: 0,
-		MinBytes:  0x3E8,
-		MaxBytes:  10e6,
-	})
-	client := influxdb2.NewClient(*influxHost, *token)
-	readAndPersist(r, client)
+	_, kafkaHost, influxHost, token := parseFlags()
+	probes := make(chan domain.Probe)
+	topics := make(map[string]bool)
+	pub := PublisherImpl{
+		influxHost:  *influxHost,
+		influxToken: *token,
+		Probes:      probes,
+	}
+	reader := ReaderImpl{
+		Probes:    probes,
+		kafkaHost: *kafkaHost,
+		topics:    &topics,
+	}
+	go reader.start(*kafkaHost)
+	go pub.start()
+
+	address := "0.0.0.0:50051"
+	lis, err := net.Listen("tcp", address)
+	if err != nil {
+		log.Fatalf("Error %v", err)
+	}
+	fmt.Printf("Server is listening on %v ...", address)
+
+	s := grpc.NewServer()
+	workers.RegisterWorkersServer(s, &server{topics: &topics})
+	s.Serve(lis)
 }
 
 func parseFlags() (*string, *string, *string, *string) {
@@ -32,37 +59,4 @@ func parseFlags() (*string, *string, *string, *string) {
 	flag.Parse()
 	log.Infof("Topic : %s, kafka : %s, influx : %s, token : %s", *topic, *kafkaHost, *influxHost, *token)
 	return topic, kafkaHost, influxHost, token
-}
-
-func readAndPersist(r *kafka.Reader, client influxdb2.InfluxDBClient) {
-	for {
-		m, err := r.ReadMessage(context.Background())
-		if err != nil {
-			log.Error(err)
-			time.Sleep(5000 * time.Millisecond)
-		}
-		var probe domain.Probe
-		err = json.Unmarshal(m.Value, &probe)
-		if err != nil {
-			log.Error("Can't parse measurement")
-		} else {
-			err = writeToInflux(client, &probe)
-			if err != nil {
-				log.Error(err)
-			}
-		}
-
-	}
-}
-func writeToInflux(client influxdb2.InfluxDBClient, m *domain.Probe) error {
-	topic := m.Sensor
-	writeApi := client.WriteApi("", "probes")
-	point := influxdb2.NewPoint(topic,
-		map[string]string{"unit": "delay"},
-		map[string]interface{}{m.Unit: m.Value},
-		time.Now())
-	writeApi.WritePoint(point)
-
-	log.Info("Writing to influx")
-	return nil
 }
