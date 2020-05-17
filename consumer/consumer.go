@@ -3,6 +3,8 @@ package main
 import (
 	workers "alpha/api/gen"
 	"alpha/domain"
+	"alpha/internal/publisher"
+	reader2 "alpha/internal/reader"
 	"context"
 	"flag"
 	"fmt"
@@ -26,18 +28,18 @@ func main() {
 	_, kafkaHost, influxHost, token := parseFlags()
 	probes := make(chan domain.Probe)
 	topics := make(map[string]bool)
-	pub := PublisherImpl{
-		influxHost:  *influxHost,
-		influxToken: *token,
+	pub := publisher.PublisherImpl{
+		InfluxHost:  *influxHost,
+		InfluxToken: *token,
 		Probes:      probes,
 	}
-	reader := ReaderImpl{
+	reader := reader2.ReaderImpl{
 		Probes:    probes,
-		kafkaHost: *kafkaHost,
-		topics:    &topics,
+		KafkaHost: *kafkaHost,
+		Topics:    &topics,
 	}
-	go reader.start(*kafkaHost)
-	go pub.start()
+	go reader.Start(*kafkaHost)
+	go pub.Start()
 
 	address := "0.0.0.0:50051"
 	lis, err := net.Listen("tcp", address)
